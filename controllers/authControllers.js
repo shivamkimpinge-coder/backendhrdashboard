@@ -3,10 +3,12 @@ const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const User = require("../model/userModel");
 const sendEmail = require("../utils/sendEmail");
+const { resetPasswordEmail } = require("../utils/emailTemplates");
 
 
 const register = async (req, res) => {
   const { name, email, password } = req.body;
+  console.log("request body", req.body);
 
   if (!name || !email || !password) {
     return res.status(400).json({
@@ -132,17 +134,11 @@ const forgotPassword = async (req, res) => {
     await user.save();
 
     // Send original token in URL
-    const resetURL = `http://localhost:5174/reset-password?token=${resetToken}`;
+    const resetURL = `${process.env.CLIENT_URL}/reset-password?token=${resetToken}`;
 
-    await sendEmail(
-      user.email,
-      "Reset Your Password",
-      `Click this link to reset your password:
+    const { text, html } = resetPasswordEmail(resetURL);
 
-${resetURL}
-
-This link will expire in 15 minutes.`
-    );
+    await sendEmail(user.email, "Reset Your Password", text, html);
 
     res.status(200).json({
       message: "Reset password link sent successfully",
